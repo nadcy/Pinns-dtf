@@ -55,6 +55,24 @@ class CloudPointSolver():
         self._best_model = -1
         self._best_loss = float("inf")
 
+        # deal with model
+        if isinstance(model,str):
+            raise NotImplementedError
+        elif isinstance(model,list):
+            self._model = ForwardNetwork(model)
+        elif isinstance(model,torch.nn.Module):
+            self._model = model
+        else:
+            raise NotImplementedError
+        self._model = self._model.to(self._device)
+
+        # deal with optimizer
+        if optimizer == "adam":
+            self._optimizer = torch.optim.Adam(self._model.parameters(), \
+                lr=1e-3)
+        else:
+            raise NotImplementedError
+
         # 未设置值，自定义推进过程
         if cloud_point_list == None:
             return
@@ -82,47 +100,46 @@ class CloudPointSolver():
         else:
             self._loss_weight_list = torch.tensor(loss_weight_list)
             self._loss_weight_list.to(self._device)
-
-        # deal with model
-        if isinstance(model,str):
-            raise NotImplementedError
-        elif isinstance(model,list):
-            self._model = ForwardNetwork(model)
-        elif isinstance(model,torch.nn.Module):
-            self._model = model
-        else:
-            raise NotImplementedError
-        self._model = self._model.to(self._device)
-
-        # deal with optimizer
-        if optimizer == "adam":
-            self._optimizer = torch.optim.Adam(self._model.parameters(), \
-                lr=1e-3)
-        else:
-            raise NotImplementedError
-
-        # copy optimizer
+        
         self._batchsize = batchsize
 
 
     def train_step(self, *,
         cloud_point_list = None,
-        loss = None,
+        loss_list = None,
+        loss_weight_list = None,
         optimizer = None,
         batchsize = None):
         """使神经网络训练步进一步，默认参数值不为None时可自定义训练流程
 
         Args:
         cloud_point
-        loss
+        loss_list
+        loss_weight_list
+            列表类型，约束loss_list被指定时，loss_weight_list必须被指定
+            ATTENTION：loss_weight_list存在调用歧义的默认值行为，其可能被理
+            解为使用成员对象的值，也可能被理解为根据loss_list长度赋一个全1值。
+            所以，我们约束loss_list被指定时，loss_weight_list必须被指定
         optimizer
         batchsize
+            列表类型，约束cloud_point_list被指定时，batchsize必须被指定
+            ATTENTION：cloud_point_list存在调用歧义的默认值行为，其可能被理
+            解为使用成员对象的值，也可能被理解为根据cloud_point_list产生全1值。
+            所以，我们约束cloud_point_list被指定时，batchsize必须被指定
         """
+        # 异常判定
+        # TODO 改为xor跟随
+        if loss_list==None and loss_weight_list!=None:
+            raise(NotImplementedError)
+        if cloud_point_list==None and batchsize!=None:
+            raise(NotImplementedError)
+
         self._model.train()
 
         if cloud_point_list == None:
             used_data_loader_list = self._default_data_loader_list
         else:
+            # 使用 cloud_point_list,batch_size 生成 used_data_loader_list
             used_data_loader_list  = []
             for i,cloud_point_item in enumerate(cloud_point_list):
                 if isinstance(batchsize, int):
@@ -135,15 +152,32 @@ class CloudPointSolver():
                     raise NotImplementedError
                 used_data_loader_list.append(data_loader_item)
 
-        # 计算loss_all
-        num_loss = len(self._loss_list)
+        # 处理 loss_list 与 loss_weight_list 默认值行为（直接赋值即可）
+        # ?直接用函数默认值参数实现会不会更好
+        # 注意batch_size还没有实现默认值行为
+        if loss_list == None:
+            used_loss_list = self._loss_list
+        else:
+            used_loss_list = loss_list
+
+        # 注意：loss_weight_list 从不
+        if loss_weight_list != None:
+            # 有参数用参数
+            used_loss_weight_list = torch.tensor(loss_weight_list)
+            used_loss_weight_list = used_loss_weight_list.to(self._device)
+        else:
+            # 无参数使用默认值
+            used_loss_weight_list = self._loss_weight_list
+
+        num_loss = len(used_loss_list)
+            
         for batch_data_list in zip(*used_data_loader_list):
             # 每一小batch执行
             loss_list = []
 
             for loss_iter_num in range(num_loss): 
-                loss_item = self._loss_list[loss_iter_num]
-                loss_weight_item = self._loss_weight_list[loss_iter_num]
+                loss_item = used_loss_list[loss_iter_num]
+                loss_weight_item = used_loss_weight_list[loss_iter_num]
                 batch_data = batch_data_list[loss_iter_num]
                 
                 # 加权求和
@@ -151,31 +185,16 @@ class CloudPointSolver():
                 loss_list.append(base_loss * loss_weight_item)
             loss_all = torch.sum(torch.stack(loss_list))
         
-            self._optimizer.zero_grad()
-            loss_all.backward()
-
-            def clusure():
-                self._optimizer.zero_grad()
-                loss_list = []
-                for loss_iter_num in range(num_loss): 
-                    loss_item = self._loss_list[loss_iter_num]
-                    loss_weight_item = self._loss_weight_list[loss_iter_num]
-                    batch_data = batch_data_list[loss_iter_num]
-                
-                    # 加权求和
-                    base_loss = loss_item(self._model, batch_data)
-                    loss_list.append(base_loss * loss_weight_item)
-                    loss_all = torch.sum(torch.stack(loss_list))
-                loss_all.backward()
-                return loss_all 
-
-
-            self._optimizer.step()
+        self._optimizer.zero_grad()
+        loss_all.backward()
+        self._optimizer.step()
 
 
     def test_step(self, *,
-        cloud_point = None,
-        loss = None,
+        cloud_point_list = None,
+        loss_list = None,
+        loss_weight_list = None,
+        batchsize = None,
         print_flag = False):
         """进行单步测试
 
@@ -189,17 +208,57 @@ class CloudPointSolver():
         """
         self._model.eval()
 
+        # 异常判定
+        # TODO 改为xor跟随
+        if loss_list==None and loss_weight_list!=None:
+            raise(NotImplementedError)
+        if cloud_point_list==None and batchsize!=None:
+            raise(NotImplementedError)
+
+        # BEGIN: 参数处理
+        if cloud_point_list == None:
+            used_data_loader_list = self._default_data_loader_list
+        else:
+            # 使用 cloud_point_list,batch_size 生成 used_data_loader_list
+            used_data_loader_list  = []
+            for i,cloud_point_item in enumerate(cloud_point_list):
+                if isinstance(batchsize, int):
+                    data_loader_item = get_data_loader(cloud_point_item, \
+                        batch_size = batchsize)
+                elif isinstance(batchsize, list):
+                    data_loader_item = get_data_loader(cloud_point_item, \
+                        batch_size = batchsize[i])
+                else:
+                    raise NotImplementedError
+                used_data_loader_list.append(data_loader_item)
+        # 处理 loss_list 与 loss_weight_list 默认值行为（直接赋值即可）
+        # ?直接用函数默认值参数实现会不会更好
+        # 注意batch_size还没有实现默认值行为
+        if loss_list == None:
+            used_loss_list = self._loss_list
+        else:
+            used_loss_list = loss_list
+        # 注意：loss_weight_list 从不
+        if loss_weight_list != None:
+            # 有参数用参数
+            used_loss_weight_list = torch.tensor(loss_weight_list)
+            used_loss_weight_list = used_loss_weight_list.to(self._device)
+        else:
+            # 无参数使用默认值
+            used_loss_weight_list = self._loss_weight_list
+
         # 计算loss_all
-        num_loss = len(self._loss_list)
+        num_loss = len(used_loss_list)
+        # END: 参数处理
 
         # 计算loss_item(shape should be (loss_kind_num * batch_num))
         loss_per_batch = [[] for i in range(num_loss+1)]
-        for batch_data_list in zip(*self._default_data_loader_list):
+        for batch_data_list in zip(*used_data_loader_list):
             # 每一batch依次计算各类loss
             loss_all = torch.tensor([0], device=self._device)    
             for loss_iter_num in range(num_loss): 
-                loss_item = self._loss_list[loss_iter_num]
-                loss_weight_item = self._loss_weight_list[loss_iter_num]
+                loss_item = used_loss_list[loss_iter_num]
+                loss_weight_item = used_loss_weight_list[loss_iter_num]
                 batch_data = batch_data_list[loss_iter_num]
                 # 加权求和
                 base_loss = loss_item(self._model, batch_data)
