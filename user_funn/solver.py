@@ -286,7 +286,7 @@ class CloudPointSolver():
             self._best_model = copy.deepcopy(self._model)
    
 
-    def model_eval(self, x_point):
+    def model_eval(self, x_point, use_best_model_flag = True):
         """使用最佳模型进行测试
 
         Args:
@@ -294,8 +294,17 @@ class CloudPointSolver():
         """
         x_point = torch.tensor(x_point)
         x_point = x_point.to(torch.float32).to(self._device)
-        self._best_model.eval()
-        calc_val = self._best_model(x_point)
+        if use_best_model_flag == True:
+            if self._best_model == -1:
+                self._model.eval()
+                calc_val = self._model(x_point)
+            else:
+                self._best_model.eval()
+                calc_val = self._best_model(x_point)
+        else:
+            self._model.eval()
+            calc_val = self._model(x_point)
+
         calc_val = calc_val.detach().cpu()
         return calc_val
 
