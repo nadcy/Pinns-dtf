@@ -305,7 +305,7 @@ class CloudPointSolver():
             self._model.eval()
             calc_val = self._model(x_point)
 
-        calc_val = calc_val.detach().cpu()
+        calc_val = calc_val.detach().cpu().numpy()
         return calc_val
 
 

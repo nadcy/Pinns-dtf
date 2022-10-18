@@ -22,10 +22,11 @@ import numpy as np
 #   a = 0.02; L = 1; t_max = 3
 
 class HeatBenchMark():
-    def __init__(self, n, a, L, tmax):
+    def __init__(self, n, a, L,tmin = 0, tmax = 1):
         self.n = n
         self.a = a
         self.L = L
+        self.tmin = tmin
         self.tmax = tmax
 
     def heat_eq_exact_solution(self, x, t):
@@ -45,7 +46,7 @@ class HeatBenchMark():
         # Number of points in each dimension:
         x_dim, t_dim = (128, 128)
 
-        t = np.linspace(0, self.tmax, num=t_dim)
+        t = np.linspace(self.tmin, self.tmax, num=t_dim)
         x = np.linspace(0, self.L, num=x_dim)
         tt, xx = np.meshgrid(t, x, indexing='ij')
 
