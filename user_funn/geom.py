@@ -42,7 +42,6 @@ def add_t(cloud_point, t_array):
             rep_t_array[k] = t_array[i]
             k = k+1
 
-
     rep_cloud_point = np.tile(cloud_point, (num_time,1))
     new_cloud_point = np.hstack([rep_t_array, rep_cloud_point])
     return new_cloud_point
