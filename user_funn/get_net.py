@@ -2,6 +2,8 @@ from xmlrpc.server import DocXMLRPCRequestHandler
 import torch
 from torch import nn
 class DataNetwork(nn.Module):
+    """ 用于有限差分
+    """
     def __init__(self, net_size_vec=[2,64,64,64,64,3]):
         super(DataNetwork, self).__init__()
         sqnet_para_list = []
