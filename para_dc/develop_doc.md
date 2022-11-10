@@ -7,7 +7,7 @@
 实现comm_solver类：
 额外包含属性/方法
     发送：send,send_spatial_domain_pc
-    接收：recv,recv_spatial_domain_pc,comm_loss
+    接收：comm_buf,recv,recv_spatial_domain_pc,comm_loss
 
 对于现有的solver API，可执行以下改进：
 需求一
