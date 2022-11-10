@@ -1,3 +1,6 @@
+""" loss的数据集制作
+    注意检查：torch.utils.data.TensorDataset
+"""
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader

@@ -3,9 +3,11 @@ import copy
 import numpy as np
 import torch
 
-from .ds import get_data_loader
-from .get_net import ForwardNetwork
+from ..ds import get_data_loader
+from ..get_net import ForwardNetwork
+from .. import ds
 
+# TODO: should replace to Solver
 class CloudPointSolver():
     """ 该求解器类可根据点云数据与用户定义的损失计算函数进行方程求解
 

@@ -118,3 +118,17 @@ class IndependentNetwork(nn.Module):
         u = self.linear_relu_stack2(x)
         v = self.linear_relu_stack3(x)
         return torch.cat((p, u, v), -1)
+
+def get_model(model_proto, device):
+    """ deal with model
+    """
+    if isinstance(model_proto,str):
+        raise NotImplementedError
+    elif isinstance(model_proto,list):
+        model = ForwardNetwork(model_proto)
+    elif isinstance(model_proto,torch.nn.Module):
+        model = model_proto
+    else:
+        raise NotImplementedError
+    model = model.to(device)
+    return model

@@ -185,9 +185,9 @@ class CloudPointSolver():
                 loss_list.append(base_loss * loss_weight_item)
             loss_all = torch.sum(torch.stack(loss_list))
         
-        self._optimizer.zero_grad()
-        loss_all.backward()
-        self._optimizer.step()
+            self._optimizer.zero_grad()
+            loss_all.backward()
+            self._optimizer.step()
 
 
     def test_step(self, *,
