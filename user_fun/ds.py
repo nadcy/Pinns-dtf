@@ -52,17 +52,45 @@ class PointCloudSingleDataset(Dataset):
         resx = self.xdata[idx]
         return resx
 
-def get_data_loader(data_list, batch_size = 64, device_str = None):
-    if device_str == None:
-        device = torch.device("cuda:0" if torch.cuda.is_available() \
-            else "cpu")
-    
+def get_data_loader(data_list, batch_size, device_str):
+    """ 构造一个data_loader
+    """
     if len(data_list) == 1:
         x_data = data_list[0]
-        data_set = PointCloudSingleDataset(x_data, device)
+        data_set = PointCloudSingleDataset(x_data, device_str)
     elif len(data_list) == 2:
         x_data, y_data = data_list
-        data_set = PointCloudPairDataset(x_data, y_data, device)
+        data_set = PointCloudPairDataset(x_data, y_data, device_str)
 
     data_loader = DataLoader(data_set, batch_size=batch_size, shuffle=True)
     return data_loader
+
+
+def construct_data_loader_list(cloud_point_list, batchsize, device_str):
+    """ 构造data_loader_list
+    """
+    dataset_size_list = [len(item[0]) for item in cloud_point_list]
+    
+    # 计算batchsize_list
+    if batchsize == 'all':
+        batchsize_list = dataset_size_list
+    else:
+        if max(dataset_size_list)%batchsize == 0:
+            batch_num = max(dataset_size_list)//batchsize
+        else:
+            batch_num = max(dataset_size_list)//batchsize + 1
+        batchsize_list = []
+        for i,cloud_point_item in enumerate(cloud_point_list):
+            if dataset_size_list[i]%batch_num == 0:
+                batchsize_list.append(dataset_size_list[i]//batch_num)
+            else:
+                batchsize_list.append(dataset_size_list[i]//batch_num+1)
+
+    # 计算data_loader_list
+    data_loader_list = []
+    for i,cloud_point_item in enumerate(cloud_point_list):
+        data_loader_item = get_data_loader(cloud_point_item, 
+            batch_size = batchsize_list[i],
+            device_str = device_str)
+        data_loader_list.append(data_loader_item)
+    return data_loader_list

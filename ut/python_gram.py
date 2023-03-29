@@ -7,6 +7,9 @@ print('解释器目录',sys.executable)
 add_path = os.path.join(sys.path[0],'../')
 print('添加目录', add_path)
 
+import torch
+print(2 * torch.acos(torch.tensor(0.0)))
+
 sys.path.append(add_path)
 
 with open('a.txt','w') as f:
