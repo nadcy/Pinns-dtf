@@ -87,3 +87,23 @@ def get_tspan_cp_loss(cloud_point_list,loss_list,t_span):
 
     return res_cloud_point_list,res_loss_flag_list
 
+def generate_points_in_rectangle(bottom_left, top_right, num_points):
+    """
+    在给定长方形内生成随机点。
+
+    参数：
+    bottom_left (tuple) : 长方形左下角的坐标 (x, y)
+    top_right (tuple) : 长方形右上角的坐标 (x, y)
+    num_points (int) : 要生成的随机点的数量
+
+    返回：
+    points (ndarray) : 长方形内生成的随机点的坐标数组，形状为 (points_num, 2)
+    """
+    x_min, y_min = bottom_left
+    x_max, y_max = top_right
+
+    xs = np.random.uniform(x_min, x_max, size=num_points)
+    ys = np.random.uniform(y_min, y_max, size=num_points)
+    
+    points = np.column_stack((xs, ys))
+    return points

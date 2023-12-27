@@ -45,7 +45,7 @@ def ico_2D_static_factory(loss_fn,MU):
         eq2 = u * dvdx + v * dvdy + dpdy - MU * (dv2dx2 + dv2dy2)
         eq3 = dudx + dvdy
         loss_val = loss_fn(eq1, y_real[:,[0]]) + loss_fn(eq2, y_real[:,[1]]) + \
-            loss_fn(eq3, y_real[:,[2]])
+            3*loss_fn(eq3, y_real[:,[2]])
         return loss_val
     return pde_loss
 

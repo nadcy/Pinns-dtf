@@ -161,7 +161,7 @@ class Trainer:
                     if include]
                 last_loss = loss_filter + addition_loss
                 
-
+            # TODO 额外保存中间过程
             if epoch % test_round == 0:
                 _,error = self.test_eval(
                     self.cp_para_list if self.rank == 0 else None, self.solver)
@@ -202,12 +202,14 @@ class Trainer:
             np.savetxt(file_path2, error_record, delimiter=',', fmt='%f')
         
     def test(self,x_plot_list,solver):
+        # 公共
         x_plot = scatter_objects(x_plot_list if self.rank == 0 else None)
         local_y_test = solver.model_eval(x_plot,use_best_model_flag=False)
         y_test_list = gather_objects(local_y_test)
         return y_test_list
     
     def test_eval(self,cp_para_list,solver):
+        # TODO 添加一个eval_method
         x_test_list = [cp_para[0][0] for cp_para in cp_para_list] \
             if self.rank == 0 else None
         y_test_list = self.test(x_test_list, solver)

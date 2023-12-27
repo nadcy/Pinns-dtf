@@ -29,7 +29,7 @@ class HeatBenchMark():
         self.tmin = tmin
         self.tmax = tmax
 
-    def heat_eq_exact_solution(self, x, t):
+    def heat_eq_exact_solution(self, t, x):
         """Returns the exact solution for a given x and t (for sinusoidal initial conditions).
 
         Parameters
@@ -55,7 +55,7 @@ class HeatBenchMark():
         # Obtain the value of the exact solution for each generated point:
         for i in range(t_dim):
             for j in range(x_dim):
-                usol[i][j] = self.heat_eq_exact_solution(x[j], t[i])
+                usol[i][j] = self.heat_eq_exact_solution(t[i],x[j])
 
         return tt,xx,usol
 
@@ -68,3 +68,5 @@ class HeatBenchMark():
     
     def gen_bc_data(self, x_data):
         pass
+
+    

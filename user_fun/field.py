@@ -43,7 +43,6 @@ class D1Field:
         return X
 
 
-
 class D2Field:
     # field_lower,field_upper should be a numpy array
     def __init__(self, x0_range, x1_range):
@@ -67,15 +66,12 @@ class D2Field:
         X = np.array([X0.ravel(),X1.ravel()]).T
         return X
 
-
     def define_input_variable(self, variable_str = ['x','y']):
         self.input_variable_name = variable_str
-
 
     def define_output_variable(self, variable_str):
         self.output_variable_name = variable_str
     
-
     def get_bc_rand(self, data_size, bc_describe_str, output_fun):
         """ get a rectangle in a low dimension
 

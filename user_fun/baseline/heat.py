@@ -22,7 +22,7 @@ import numpy as np
 #   a = 0.02; L = 1; t_max = 3
 
 class HeatBenchMark():
-    def __init__(self, n, a, L,tmin = 0, tmax = 1):
+    def __init__(self, n = 4, a = 0.005, L = 1, tmin = 0, tmax = 1):
         self.n = n
         self.a = a
         self.L = L
@@ -68,3 +68,64 @@ class HeatBenchMark():
     
     def gen_bc_data(self, x_data):
         pass
+
+
+import torch
+from torch import nn
+from user_fun.geom import line_linspace,generate_points_in_rectangle
+from user_fun.pde import diff
+from user_fun import bc
+# 热传导继续实现
+def HeatBenchMark_longtime():
+
+    density = 32
+    init_input = line_linspace([0,0],[1,0],density*2)
+    init_output = np.sin(2*np.pi *init_input[:,[0]])
+
+    left_input = line_linspace([0,0],[0,3],density*3)
+    left_output = np.sin(np.pi *left_input[:,[1]])
+    right_input = line_linspace([1,0],[1,3],density*3)
+    right_output = np.sin(np.pi *right_input[:,[1]])
+
+    field_input = generate_points_in_rectangle([0,0],[1,3],density*density*3)
+    field_output = np.zeros((field_input.shape[0],1))
+
+    cp_list = [
+        [field_input, field_output],
+        [left_input, left_output],
+        [right_input, right_output],
+        [init_input, init_output]
+    ]
+
+    a = 0.02
+    loss_fn = nn.MSELoss()
+    def heat_loss(model, data):
+        input,output = data
+        input.requires_grad=True
+        
+
+        # 数据提取
+        x = input[:,[0]]
+        t = input[:,[1]]
+        use_input = torch.cat([x,t],dim = 1)
+        U = model(use_input)
+        u = U[:,[0]]
+
+        # 计算一阶导
+        dudx = diff(u, x)
+        dudt = diff(u, t)
+        # 计算二阶导
+        du2dx2 = diff(dudx, x)
+
+        loss = dudt - a * du2dx2
+        loss = loss_fn(loss, output)
+        return loss
+    
+    left_loss = bc.data_loss_factory(loss_fn)
+    right_loss = bc.data_loss_factory(loss_fn)
+    init_loss = bc.data_loss_factory(loss_fn)
+    loss_list = [
+        heat_loss, left_loss, right_loss, init_loss
+    ]
+
+    return cp_list,loss_list

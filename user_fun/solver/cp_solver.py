@@ -143,6 +143,8 @@ class CloudPointSolver():
             if loss_weight_list == None:
                 used_loss_weight_list = \
                     torch.ones(len(used_loss_list), device = self._device)
+            else:
+                used_loss_weight_list = loss_weight_list
             
 
         # 训练开始
@@ -258,6 +260,7 @@ class CloudPointSolver():
         if use_best_model_flag == True:
             if self._best_model == -1:
                 self._model.eval()
+                print('x_point_shape:',x_point.shape)
                 calc_val = self._model(x_point)
             else:
                 self._best_model.eval()
